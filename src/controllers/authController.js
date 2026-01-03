@@ -59,17 +59,35 @@ exports.login = async (req, res) => {
     )
 
     // 5️⃣ Send response
-    res.status(200).json({
-      message: "Login successful",
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-      },
-    })
+    res
+  .cookie("token", token, {
+    httpOnly: true,        // ❌ JS cannot access
+    secure: process.env.NODE_ENV === "production", // HTTPS only in prod
+    sameSite: "strict",    // CSRF protection
+    maxAge: 24 * 60 * 60 * 1000, // 1 day
+  })
+  .status(200)
+  .json({
+    message: "Login successful",
+    user: {
+      id: user._id,
+      email: user.email,
+      role: user.role,
+    },
+  });
 
   } catch (error) {
     res.status(500).json({ message: error.message })
   }
 }
+
+exports.logout = (req, res) => {
+  res
+    .clearCookie("token", {
+      httpOnly: true,
+      sameSite: "strict",
+      secure: process.env.NODE_ENV === "production",
+    })
+    .status(200)
+    .json({ message: "Logout successful" });
+};
